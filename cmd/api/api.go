@@ -5,10 +5,12 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
+	"github.com/qlfzn/roamap/internal/handlers"
 )
 
 type application struct {
 	config Config
+	handler *handlers.Post
 }
 
 type Config struct {
@@ -19,9 +21,10 @@ func (app *application) mount() http.Handler {
 	r := chi.NewRouter()
 
 	r.Route("/v1", func(r chi.Router) {
-		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("ok from the server"))
 		})
+		r.Post("/posts", app.handler.SavePostHandler)
 	})
 
 	return r
