@@ -10,7 +10,8 @@ import (
 
 type application struct {
 	config Config
-	handler *handlers.Post
+	postHandler *handlers.Post
+	placeHandler *handlers.Place
 }
 
 type Config struct {
@@ -24,7 +25,10 @@ func (app *application) mount() http.Handler {
 		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("ok from the server"))
 		})
-		r.Post("/posts", app.handler.SavePostHandler)
+		r.Post("/posts", app.postHandler.SavePostHandler)
+		r.Get("/posts", app.postHandler.GetPostHandler)
+
+		r.Get("/places/{id}", app.placeHandler.GetPlaceById)
 	})
 
 	return r

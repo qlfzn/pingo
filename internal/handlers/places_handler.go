@@ -3,35 +3,35 @@ package handlers
 import (
 	"net/http"
 
+	"github.com/go-chi/chi"
+	"github.com/qlfzn/roamap/internal/services"
 	"github.com/qlfzn/roamap/internal/utils"
 )
 
 type NewPlacePayload struct {
-	Name string `json:"name"`
+	PlaceID string `json:"place_id"`
 }
 
 type Place struct {
-	Name string
-	Lat string
-	Long string
-	Address string
-	Details PlaceDetail
+	// define dependencies
+	Service *services.PlaceService
 }
 
-type PlaceDetail struct {
-	Ratings string
-	OpenHours string
-}
+func (p *Place) GetPlaceById (w http.ResponseWriter, r *http.Request) {
+	var newPlace NewPlacePayload
+	id := chi.URLParam(r, "id")
+	newPlace.PlaceID = id
 
-func (p *Place) NewPlaceHandler(w http.ResponseWriter, r *http.Request) {
-	var NewPlace NewPlacePayload
-
-	err := utils.ReadJSON(w, r, &NewPlace)
+	location, err := p.Service.GetPlaceDetails(newPlace.PlaceID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error() , http.StatusBadRequest)
 		return
 	}
 
-	// check if place exist in map -> call service
-	
+	utils.WriteJSON(w, http.StatusOK, map[string]string{
+		"msg": "fetched location details",
+		"id": newPlace.PlaceID,
+		"name": location.Name,
+		"geometry": location.Location.String(),
+	})
 }
