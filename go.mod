@@ -1,4 +1,4 @@
-module github.com/qlfzn/roamap
+module github.com/qlfzn/pingo
 
 go 1.24.2
 

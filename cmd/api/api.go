@@ -5,12 +5,12 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
-	"github.com/qlfzn/roamap/internal/handlers"
+	"github.com/qlfzn/pingo/internal/handlers"
 )
 
 type application struct {
-	config Config
-	postHandler *handlers.Post
+	config       Config
+	postHandler  *handlers.Post
 	placeHandler *handlers.Place
 }
 
@@ -25,7 +25,7 @@ func (app *application) mount() http.Handler {
 		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("ok from the server"))
 		})
-		r.Post("/posts", app.postHandler.SavePostHandler)
+		r.Post("/posts", app.postHandler.CreatePostHandler)
 		r.Get("/posts", app.postHandler.GetPostHandler)
 
 		r.Get("/places/{id}", app.placeHandler.GetPlaceById)
@@ -37,7 +37,7 @@ func (app *application) mount() http.Handler {
 func (app *application) run(mux http.Handler) error {
 	// init server instance
 	srv := &http.Server{
-		Addr: app.config.addr,
+		Addr:    app.config.addr,
 		Handler: mux,
 	}
 
@@ -49,4 +49,4 @@ func (app *application) run(mux http.Handler) error {
 	}
 
 	return nil
-} 
+}

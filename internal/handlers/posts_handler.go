@@ -3,35 +3,34 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/qlfzn/roamap/internal/services"
-	"github.com/qlfzn/roamap/internal/utils"
+	"github.com/qlfzn/pingo/internal/data"
+	"github.com/qlfzn/pingo/internal/services"
+	"github.com/qlfzn/pingo/internal/utils"
 )
-
-type NewPostPayload struct {
-	Url string `json:"url"` 
-	Title string `json:"title"`
-}
 
 type Post struct {
 	// injects services dependencies
 	Service *services.PostService
 }
 
-func (p *Post) SavePostHandler(w http.ResponseWriter, r *http.Request) {
-	var payload NewPostPayload
+func (p *Post) CreatePostHandler(w http.ResponseWriter, r *http.Request) {
+	var post data.Post
 
-	err := utils.ReadJSON(w, r, &payload)
+	err := utils.ReadJSON(w, r, &post)
 	if err != nil {
-		http.Error(w, err.Error() , http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// TODO: validation
-	// TODO: pass to service layer
-	
+	err = p.Service.SavePost(&post)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	utils.WriteJSON(w, http.StatusCreated, map[string]string{
-		"message" : "post saved successfully",
-		"url" : payload.Url,
+		"message": "post saved successfully",
+		"url":     post.URL,
 	})
 }
 
