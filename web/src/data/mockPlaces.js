@@ -1,0 +1,38 @@
+export const mockPlaces = [
+  {
+    id: "1",
+    name: "Santorini, Greece",
+    dateToGo: "2024-08-15",
+    description: "Beautiful sunset views and white buildings. Perfect for romantic getaway!",
+    originalPostUrl: "https://instagram.com/p/example1",
+    coordinates: { lat: 36.3932, lng: 25.4615 },
+    createdAt: "2024-01-15",
+  },
+  {
+    id: "2",
+    name: "Tokyo, Japan",
+    dateToGo: "2024-10-20",
+    description: "Cherry blossoms and amazing street food. Must visit the temples!",
+    originalPostUrl: "https://tiktok.com/@user/video/example2",
+    coordinates: { lat: 35.6762, lng: 139.6503 },
+    createdAt: "2024-01-20",
+  },
+  {
+    id: "3",
+    name: "Bali, Indonesia",
+    dateToGo: "2024-12-10",
+    description: "Tropical paradise with beautiful beaches and rice terraces.",
+    originalPostUrl: "https://twitter.com/user/status/example3",
+    coordinates: { lat: -8.3405, lng: 115.092 },
+    createdAt: "2024-02-01",
+  },
+  {
+    id: "4",
+    name: "Paris, France",
+    dateToGo: "2024-09-05",
+    description: "City of love! Eiffel Tower and amazing cafes everywhere.",
+    originalPostUrl: "https://instagram.com/p/example4",
+    coordinates: { lat: 48.8566, lng: 2.3522 },
+    createdAt: "2024-02-10",
+  },
+]
