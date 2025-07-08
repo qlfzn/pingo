@@ -1,99 +1,124 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { MapPin, Link, Heart, Calendar, FileText, Search } from "lucide-react"
-import { useAuth } from "./context/AuthContext"
-import { AuthPrompt } from "./components/AuthPrompt"
+import { useState, useRef, useEffect } from "react";
+import { MapPin, Link, Heart, Calendar, FileText, Search } from "lucide-react";
+import { useAuth } from "./context/AuthContext";
+import { AuthPrompt } from "./components/AuthPrompt";
+import { APIProvider, Map, AdvancedMarker } from "@vis.gl/react-google-maps";
+import { Loader } from "@googlemaps/js-api-loader";
 
 export function LandingPage() {
-  const { user } = useAuth()
-  const [postUrl, setPostUrl] = useState("")
-  const [placeName, setPlaceName] = useState("")
-  const [selectedPlace, setSelectedPlace] = useState(null)
-  const [showAuthPrompt, setShowAuthPrompt] = useState(false)
-  const [currentStep, setCurrentStep] = useState(1) // 1: URL, 2: Place, 3: Details
+  const { user } = useAuth();
+  const [postUrl, setPostUrl] = useState("");
+  const [placeName, setPlaceName] = useState("");
+  const [selectedPlace, setSelectedPlace] = useState(null);
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
   const [placeData, setPlaceData] = useState({
     dateToGo: "",
     description: "",
-  })
+  });
+  const [position, setPosition] = useState({ lat: 3.1319, lng: 101.6841 });
+  const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
+  const autocompleteInputRef = useRef(null);
+
+  // Google Places Autocomplete setup for Step 2
+  useEffect(() => {
+    if (currentStep !== 2) return;
+    let loader;
+    let autocomplete;
+    let listener;
+    let isMounted = true;
+    if (GOOGLE_API_KEY && autocompleteInputRef.current) {
+      loader = new Loader({ apiKey: GOOGLE_API_KEY, libraries: ["places"] });
+      loader.load().then(() => {
+        if (!isMounted) return;
+        autocomplete = new window.google.maps.places.Autocomplete(autocompleteInputRef.current, {
+          types: ["establishment", "geocode"],
+        });
+        listener = autocomplete.addListener("place_changed", () => {
+          const place = autocomplete.getPlace();
+          if (place && place.geometry && place.geometry.location) {
+            const coordinates = {
+              lat: place.geometry.location.lat(),
+              lng: place.geometry.location.lng(),
+            };
+            setSelectedPlace({
+              name: place.name,
+              address: place.formatted_address,
+              coordinates: coordinates,
+              placeId: place.place_id,
+            });
+            setPosition(coordinates);
+            setPlaceName(place.name);
+            setCurrentStep(3);
+          }
+        });
+      });
+    }
+    return () => {
+      isMounted = false;
+      if (listener) listener.remove();
+    };
+  }, [currentStep, GOOGLE_API_KEY]);
 
   const handleUrlSubmit = (e) => {
-    e.preventDefault()
-    if (!postUrl.trim()) return
-    setCurrentStep(2) // Move to place input step
-  }
-
-  // Mock Google Places Autocomplete (you'd replace with real Google Places API)
-  const handlePlaceSearch = (e) => {
-    e.preventDefault()
-    if (!placeName.trim()) return
-
-    // Mock place selection with Google Places-like data
-    const mockPlace = {
-      name: placeName,
-      address: `${placeName}, Earth`,
-      coordinates: {
-        lat: (Math.random() - 0.5) * 180,
-        lng: (Math.random() - 0.5) * 360,
-      },
-      placeId: "mock_place_id_" + Date.now(),
-    }
-
-    setSelectedPlace(mockPlace)
-    setCurrentStep(3) // Move to details step
-  }
+    e.preventDefault();
+    if (!postUrl.trim()) return;
+    setCurrentStep(2);
+  };
 
   const handleSavePlace = () => {
     if (!placeData.dateToGo || !placeData.description) {
-      alert("Please fill in the date and description first!")
-      return
+      alert("Please fill in the date and description first!");
+      return;
     }
 
     if (user) {
-      // User is signed in, save the place
       console.log("Saving place:", {
         ...selectedPlace,
         ...placeData,
         originalPostUrl: postUrl,
-      })
-      alert("Place saved successfully!")
-      resetForm()
+      });
+      alert("Place saved successfully!");
+      resetForm();
     } else {
-      // User not signed in, show sign up prompt
-      setShowAuthPrompt(true)
+      setShowAuthPrompt(true);
     }
-  }
+  };
 
   const resetForm = () => {
-    setPostUrl("")
-    setPlaceName("")
-    setSelectedPlace(null)
-    setCurrentStep(1)
-    setPlaceData({ dateToGo: "", description: "" })
-  }
+    setPostUrl("");
+    setPlaceName("");
+    setSelectedPlace(null);
+    setCurrentStep(1);
+    setPlaceData({ dateToGo: "", description: "" });
+    setPosition({ lat: 3.1319, lng: 101.6841 }); // Reset map to default
+  };
 
   const goBackStep = () => {
     if (currentStep > 1) {
-      setCurrentStep(currentStep - 1)
+      setCurrentStep(currentStep - 1);
       if (currentStep === 2) {
-        setSelectedPlace(null)
+        setSelectedPlace(null);
+        setPlaceName("");
       }
     }
-  }
+  };
 
   const getPlatformName = (url) => {
-    if (url.includes("instagram")) return "Instagram"
-    if (url.includes("tiktok")) return "TikTok"
-    if (url.includes("twitter")) return "Twitter"
-    return "Social Media"
-  }
+    if (url.includes("instagram")) return "Instagram";
+    if (url.includes("tiktok")) return "TikTok";
+    if (url.includes("twitter")) return "Twitter";
+    return "Social Media";
+  };
 
   const getPlatformIcon = (url) => {
-    if (url.includes("instagram")) return "📷"
-    if (url.includes("tiktok")) return "🎵"
-    if (url.includes("twitter")) return "🐦"
-    return "🔗"
-  }
+    if (url.includes("instagram")) return "📷";
+    if (url.includes("tiktok")) return "🎵";
+    if (url.includes("twitter")) return "🐦";
+    return "🔗";
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -109,7 +134,6 @@ export function LandingPage() {
               <p className="text-sm text-gray-500">Save places from your social media</p>
             </div>
           </div>
-
           {!user && (
             <button
               onClick={() => setShowAuthPrompt(true)}
@@ -167,9 +191,8 @@ export function LandingPage() {
               <div className="text-6xl mb-6">📱🔗</div>
               <h2 className="text-4xl font-bold text-gray-900 mb-4">Start with a Social Media Post</h2>
               <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-                Found an amazing place on Instagram, TikTok, or Twitter? Paste the post URL below to get started.
+                Found an amazing place online? Paste the post URL below to get started.
               </p>
-
               <form onSubmit={handleUrlSubmit} className="max-w-2xl mx-auto">
                 <div className="relative">
                   <Link className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -189,8 +212,6 @@ export function LandingPage() {
                   Continue
                 </button>
               </form>
-
-              {/* Example URLs */}
               <div className="flex flex-wrap justify-center gap-2 text-sm text-gray-500 mt-6">
                 <span>Try with:</span>
                 <button
@@ -223,11 +244,8 @@ export function LandingPage() {
               <div className="text-6xl mb-6">🗺️📍</div>
               <h2 className="text-4xl font-bold text-gray-900 mb-4">What Place Did You Find?</h2>
               <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-                Tell us the name of the place from your {getPlatformName(postUrl)} post. We'll find it on the map for
-                you.
+                Type the name of the place from your {getPlatformName(postUrl)} post. Select a suggestion to pin it on the map.
               </p>
-
-              {/* Show linked post */}
               <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-8 max-w-md mx-auto">
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">{getPlatformIcon(postUrl)}</span>
@@ -237,15 +255,15 @@ export function LandingPage() {
                   </div>
                 </div>
               </div>
-
-              <form onSubmit={handlePlaceSearch} className="max-w-2xl mx-auto">
+              <form className="max-w-2xl mx-auto">
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <input
                     type="text"
+                    ref={autocompleteInputRef}
                     value={placeName}
                     onChange={(e) => setPlaceName(e.target.value)}
-                    placeholder="Type place name... (e.g., Santorini Greece, Tokyo Japan, Bali Indonesia)"
+                    placeholder="Type place name (e.g., Starbucks Kuala Lumpur)"
                     className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-lg"
                     required
                   />
@@ -258,16 +276,9 @@ export function LandingPage() {
                   >
                     Back
                   </button>
-                  <button
-                    type="submit"
-                    className="flex-1 px-6 py-4 bg-gray-900 text-white rounded-2xl hover:bg-gray-800 transition-colors font-medium text-lg"
-                  >
-                    Find Place
-                  </button>
                 </div>
               </form>
-
-              <p className="text-sm text-gray-500 mt-4">💡 Tip: We use Google Places to find and verify locations</p>
+              <p className="text-sm text-gray-500 mt-4">💡 Tip: Select a suggestion to pin the place on the map and continue</p>
             </div>
           )}
 
@@ -279,25 +290,16 @@ export function LandingPage() {
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">Perfect! We Found {selectedPlace.name}</h2>
                 <p className="text-lg text-gray-600">Now add your travel plans to complete your wishlist entry.</p>
               </div>
-
               <div className="grid lg:grid-cols-2 gap-8">
-                {/* Map */}
                 <div className="bg-white rounded-2xl border border-gray-100 p-6">
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">Location on Map</h3>
                   <div className="h-80 bg-gray-50 rounded-xl flex items-center justify-center relative overflow-hidden border border-gray-100">
-                    <div className="text-center">
-                      <div className="text-4xl mb-3">📍</div>
-                      <h4 className="text-lg font-medium text-gray-700 mb-1">{selectedPlace.name}</h4>
-                      <p className="text-gray-400 text-sm">{selectedPlace.address}</p>
-                    </div>
-
-                    {/* Mock pin */}
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm shadow-lg animate-bounce">
-                      📍
-                    </div>
+                    <APIProvider apiKey={GOOGLE_API_KEY}>
+                      <Map center={position} zoom={14} mapId="RESULT_MAP_ID">
+                        <AdvancedMarker position={position} />
+                      </Map>
+                    </APIProvider>
                   </div>
-
-                  {/* Post reference */}
                   <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
                     <div className="flex items-center gap-2 text-sm text-blue-800">
                       <span className="text-base">{getPlatformIcon(postUrl)}</span>
@@ -305,16 +307,12 @@ export function LandingPage() {
                     </div>
                   </div>
                 </div>
-
-                {/* Travel Details Form */}
                 <div className="bg-white rounded-2xl border border-gray-100 p-6">
                   <div className="flex items-center gap-2 mb-5">
                     <Heart className="w-5 h-5 text-gray-400" />
                     <h3 className="text-xl font-semibold text-gray-900">Your Travel Plans</h3>
                   </div>
-
                   <div className="space-y-5">
-                    {/* Place Name (Read-only) */}
                     <div>
                       <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                         <MapPin className="w-4 h-4" />
@@ -324,8 +322,6 @@ export function LandingPage() {
                         {selectedPlace.name}
                       </div>
                     </div>
-
-                    {/* Date to Go */}
                     <div>
                       <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                         <Calendar className="w-4 h-4" />
@@ -339,8 +335,6 @@ export function LandingPage() {
                         required
                       />
                     </div>
-
-                    {/* Description */}
                     <div>
                       <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                         <FileText className="w-4 h-4" />
@@ -355,8 +349,6 @@ export function LandingPage() {
                         required
                       />
                     </div>
-
-                    {/* Preview */}
                     {placeData.dateToGo && placeData.description && (
                       <div className="bg-green-50 border border-green-200 rounded-xl p-4">
                         <h4 className="font-medium text-gray-900 mb-2">Your Travel Plan:</h4>
@@ -381,8 +373,6 @@ export function LandingPage() {
                         </div>
                       </div>
                     )}
-
-                    {/* Buttons */}
                     <div className="flex gap-3 pt-2">
                       <button
                         onClick={goBackStep}
@@ -399,13 +389,11 @@ export function LandingPage() {
                         {user ? "Save Place" : "Save (Sign Up)"}
                       </button>
                     </div>
-
                     {!user && (
                       <p className="text-center text-sm text-gray-500">
                         Create a free account to save this place to your travel map
                       </p>
                     )}
-
                     <button
                       onClick={resetForm}
                       className="w-full px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors text-sm"
@@ -457,7 +445,6 @@ export function LandingPage() {
         </div>
       </main>
 
-      {/* Sign Up Prompt */}
       <AuthPrompt
         isOpen={showAuthPrompt}
         onClose={() => setShowAuthPrompt(false)}
@@ -465,5 +452,5 @@ export function LandingPage() {
         placeData={{ ...placeData, originalPostUrl: postUrl }}
       />
     </div>
-  )
+  );
 }
